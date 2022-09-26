@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { HttpException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { OctokitService } from 'nestjs-octokit';
 import { PullRequest } from 'src/interfaces/pull-request';
 import { RepositoryDataFetcher } from 'src/interfaces/repository-data-fetcher';
@@ -22,7 +22,15 @@ export class GithubService implements RepositoryDataFetcher {
 
       return pendingPrs;
     } catch (err) {
-      throw new NotFoundException(`Repository with id ${repositoryId} not found`);
+      if (err.status === 401) {
+        throw new UnauthorizedException("Wrong Github credentials");
+      }
+
+      if (err.status === 404) {
+        throw new NotFoundException(`Repository with id ${repositoryId} not found`);
+      }
+
+      throw new HttpException("Something unexpected happened during the request", 400);
     }
   }
 }
